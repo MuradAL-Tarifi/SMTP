@@ -161,7 +161,7 @@ namespace SMTP
             },
            null,
            TimeSpan.Zero,
-           TimeSpan.FromMinutes(10)
+           TimeSpan.FromDays(1)
            );
 
             return Task.CompletedTask;
