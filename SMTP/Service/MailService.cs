@@ -2,22 +2,29 @@
 using System.Net;
 using System;
 using SMTP.Models;
+using Microsoft.Extensions.Configuration;
 
 namespace SMTP.Service
 {
     public class MailService
     {
-        public static bool SendEmail(string to, AlertTracker alertTracker)
+        private readonly IConfiguration _configuration;
+
+        public MailService(IConfiguration configuration)
+        {
+            this._configuration = configuration;
+        }
+        public bool SendEmailAlarm(string to, AlertTracker alertTracker)
         {
             using (SmtpClient smtpClient = new SmtpClient())
             {
-                var basicCredential = new NetworkCredential("a.abugharbia@compliance.com.sa", "IODCC5zv");
+                var basicCredential = new NetworkCredential(_configuration["SMTPSetting:UserName"], _configuration["SMTPSetting:Password"]);
                 using (MailMessage message = new MailMessage())
                 {
-                    MailAddress fromAddress = new MailAddress("noreply@accu-tracking.com");
+                    MailAddress fromAddress = new MailAddress(_configuration["SMTPSetting:MailAddress"]);
 
-                    smtpClient.Host = "pro.turbo-smtp.com";
-                    smtpClient.Port = 587;
+                    smtpClient.Host = _configuration["SMTPSetting:Host"];
+                    smtpClient.Port = Convert.ToInt32(_configuration["SMTPSetting:Port"]);
                     smtpClient.UseDefaultCredentials = false;
                     smtpClient.Credentials = basicCredential;
                     //smtpClient.EnableSsl = true;
@@ -43,41 +50,78 @@ namespace SMTP.Service
                 }
             }
         }
-//        public static bool SendEmail(string to)
-//        {
-//            using (SmtpClient smtpClient = new SmtpClient())
-//            {
-//                var basicCredential = new NetworkCredential("mailclass-uaabaijec@accu-tracking.com", "6593403Ahmed");
-//                using (MailMessage message = new MailMessage())
-//                {
-//                    MailAddress fromAddress = new MailAddress("noreply@accu-tracking.com");
+        public bool SendEmailIsLowVoltage(string to, string sensiorName, string invName, string warehouseName)
+        {
+            using (SmtpClient smtpClient = new SmtpClient())
+            {
+                var basicCredential = new NetworkCredential(_configuration["SMTPSetting:UserName"], _configuration["SMTPSetting:Password"]);
+                using (MailMessage message = new MailMessage())
+                {
+                    MailAddress fromAddress = new MailAddress(_configuration["SMTPSetting:MailAddress"]);
 
-//                    smtpClient.Host = "akoneseo.com";
-//                    smtpClient.Port = 587;
-//                    smtpClient.UseDefaultCredentials = false;
-//                    smtpClient.Credentials = basicCredential;
+                    smtpClient.Host = _configuration["SMTPSetting:Host"];
+                    smtpClient.Port = Convert.ToInt32(_configuration["SMTPSetting:Port"]);
+                    smtpClient.UseDefaultCredentials = false;
+                    smtpClient.Credentials = basicCredential;
+                    //smtpClient.EnableSsl = true;
 
-//                    message.From = fromAddress;
-//                    message.Subject = "Quality Compliance";
-//                    message.IsBodyHtml = true;
+                    message.From = fromAddress;
+                    message.Subject = "Quality Compliance";
+                    message.IsBodyHtml = true;
+                    message.Body = $@"    
+<div style=""font-family: 'Times New Roman', Times, serif;font-size: 15px;"">
+        <pre>Dear sir,<br>An alarm has been triggered on Accu Tracking<br>Kindly note that the battery of Sensor {sensiorName} at Warehouse {warehouseName} on Inventory {invName} is almost dead<br><br>Regards,<br>Your alert system of Accu Tracking<br><br><small>This message has been generated automatically. Please do not reply</small></pre>
+    </div>";
+                    message.To.Add(to);
 
-//                    message.Body = @"    
-//<div style=""font-family: 'Times New Roman', Times, serif;font-size: 15px;"">
-//        <pre>Hello Murad,<br>An alarm has been triggered on Accu Tracking<br>Date               Monday, January 2, 2023 5:48 AM<br>Type               Continuous high threshold<br>Monitored unit     Waerhouse JED(AD19206439)<br>Measurement point  DL-11<br>Alarm measurement  65.06%<br>Recorder           AD19206439<br>Zone               Cigalah<br>Batches            Waerhouse JED;<br><br>Regards,<br>Your alert system of Accu Tracking<br><br><small>This message has been generated automatically. Please do not reply</small></pre>
-//    </div>";
-//                    message.To.Add(to);
+                    try
+                    {
+                        smtpClient.Send(message);
+                        return true;
+                    }
+                    catch (Exception ex)
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
+        public bool SendEmailIsNotActive(string to, string sensiorName,string invName, string warehouseName)
+        {
+            using (SmtpClient smtpClient = new SmtpClient())
+            {
+                var basicCredential = new NetworkCredential(_configuration["SMTPSetting:UserName"], _configuration["SMTPSetting:Password"]);
+                using (MailMessage message = new MailMessage())
+                {
+                    MailAddress fromAddress = new MailAddress(_configuration["SMTPSetting:MailAddress"]);
 
-//                    try
-//                    {
-//                        smtpClient.Send(message);
-//                        return true;
-//                    }
-//                    catch (Exception ex)
-//                    {
-//                        return false;
-//                    }
-//                }
-//            }
-//        }
+                    smtpClient.Host = _configuration["SMTPSetting:Host"];
+                    smtpClient.Port = Convert.ToInt32(_configuration["SMTPSetting:Port"]);
+                    smtpClient.UseDefaultCredentials = false;
+                    smtpClient.Credentials = basicCredential;
+                    //smtpClient.EnableSsl = true;
+
+                    message.From = fromAddress;
+                    message.Subject = "Quality Compliance";
+                    message.IsBodyHtml = true;
+                    message.Body = $@"    
+<div style=""font-family: 'Times New Roman', Times, serif;font-size: 15px;"">
+        <pre>Dear sir,<br>An alarm has been triggered on Accu Tracking<br>Kindly note that the Sensor {sensiorName} at Warehouse {warehouseName} on Inventory {invName} not working<br><br>Regards,<br>Your alert system of Accu Tracking<br><br><small>This message has been generated automatically. Please do not reply</small></pre>
+    </div>";
+                    message.To.Add(to);
+
+                    try
+                    {
+                        smtpClient.Send(message);
+                        return true;
+                    }
+                    catch (Exception ex)
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
+
     }
 }

@@ -21,5 +21,6 @@ namespace SMTP.Models
         public string SendTo { get; set; }
         public bool? IsSend { get; set; }
         public int? AlertId { get; set; }
+        public int? Interval { get; set; }
     }
 }

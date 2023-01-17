@@ -7,7 +7,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using SMTP.Models;
+using SMTP.OtherModels;
 using SMTP.Service;
+using SMTP.ThirdModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,8 +31,12 @@ namespace SMTP
         {
             services.AddControllers();
             services.AddTransient<SMTPTrackerContext>();
+            services.AddTransient<TrackerHistoryDBContext>();
+            services.AddTransient<TrackerDBContext>();
             services.AddSingleton<AlertTrackerService>();
+            services.AddSingleton<MailService>();
             services.AddHostedService<Background>();
+
 
         }
 

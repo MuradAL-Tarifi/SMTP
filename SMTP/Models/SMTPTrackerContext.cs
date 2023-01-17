@@ -23,6 +23,7 @@ namespace SMTP.Models
         {
         }
 
+        public virtual DbSet<AlertBySensor> AlertBySensor { get; set; }
         public virtual DbSet<AlertTracker> AlertTracker { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -35,6 +36,11 @@ namespace SMTP.Models
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<AlertBySensor>(entity =>
+            {
+                entity.Property(e => e.Serial).HasMaxLength(50);
+            });
+
             modelBuilder.Entity<AlertTracker>(entity =>
             {
                 entity.Property(e => e.AlertDateTime).HasColumnType("datetime");
