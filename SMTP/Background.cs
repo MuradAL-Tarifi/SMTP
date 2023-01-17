@@ -32,49 +32,49 @@ namespace SMTP
         public Task StartAsync(CancellationToken cancellationToken)
         {
 
-           // timer10M = new Timer(async o =>
-           // {
-           //     //var x = MailService.SendEmail("Khalid@compliance.com.sa");
-           //     var alertTrackersNotTracked = await _processBackground.GetAlertTrackersNotTrackedAsync();
-           //     if (alertTrackersNotTracked != null)
-           //     {
-           //         foreach (var item in alertTrackersNotTracked)
-           //         {
-           //             var emails = item.SendTo.Split(",");
-           //             if (emails != null)
-           //             {
-           //                 bool result = false;
-           //                 foreach (var email in emails)
-           //                 {
-           //                     result = mailService.SendEmailAlarm(email, item);
-           //                     if (!result)
-           //                     {
-           //                         Console.WriteLine("SMTP ERROR Cant send to this email " + email);
-           //                     }
-           //                 }
-           //                 if (result)
-           //                 {
-           //                     await _processBackground.UpdateAlertTrackerToSendAsync(item.Id);
-           //                     Console.WriteLine("Done");
-           //                 }
-           //             }
-           //             else
-           //             {
-           //                 Console.WriteLine("Email should not be Null");
-           //             }
-           //         }
-           //     }
-           //     else
-           //     {
-           //         Console.WriteLine("No Thing Found");
-           //     }
+            timer10M = new Timer(async o =>
+            {
+                //var x = MailService.SendEmail("Khalid@compliance.com.sa");
+                var alertTrackersNotTracked = await _processBackground.GetAlertTrackersNotTrackedAsync();
+                if (alertTrackersNotTracked != null)
+                {
+                    foreach (var item in alertTrackersNotTracked)
+                    {
+                        var emails = item.SendTo.Split(",");
+                        if (emails != null)
+                        {
+                            bool result = false;
+                            foreach (var email in emails)
+                            {
+                                result = mailService.SendEmailAlarm(email, item);
+                                if (!result)
+                                {
+                                    Console.WriteLine("SMTP ERROR Cant send to this email " + email);
+                                }
+                            }
+                            if (result)
+                            {
+                                await _processBackground.UpdateAlertTrackerToSendAsync(item.Id);
+                                Console.WriteLine("Done");
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine("Email should not be Null");
+                        }
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("No Thing Found");
+                }
 
 
-           // },
-           //null,
-           //TimeSpan.Zero,
-           //TimeSpan.FromMinutes(10)
-           //);
+            },
+           null,
+           TimeSpan.Zero,
+           TimeSpan.FromMinutes(10)
+           );
             timer1Day = new Timer(async o =>
             {
                 var serials = await _processBackground.GetInventoryHistoryNotActive();
