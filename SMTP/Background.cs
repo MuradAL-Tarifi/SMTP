@@ -36,8 +36,9 @@ namespace SMTP
             {
                 //var x = MailService.SendEmail("Khalid@compliance.com.sa");
                 var alertTrackersNotTracked = await _processBackground.GetAlertTrackersNotTrackedAsync();
-                if (alertTrackersNotTracked != null)
+                if (alertTrackersNotTracked.Count() != 0)
                 {
+                    var smtpsettings = _processBackground.GetSmtpsettings();
                     foreach (var item in alertTrackersNotTracked)
                     {
                         var emails = item.SendTo.Split(",");
@@ -160,7 +161,7 @@ namespace SMTP
 
             },
            null,
-           TimeSpan.Zero,
+           TimeSpan.FromMinutes(15),
            TimeSpan.FromDays(1)
            );
 

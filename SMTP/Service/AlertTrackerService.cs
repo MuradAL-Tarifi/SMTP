@@ -23,10 +23,10 @@ namespace SMTP.Service
             //var x = await context.AlertTracker.Where(x => x.IsSend == false && x.AlertDateTime.HasValue &&
             //x.AlertDateTime.Value.Date == DateTime.Today.Date && x.AlertDateTime.Value.AddMinutes(Convert.ToDouble(x.Interval)) < DateTime.Now).ToListAsync();
 
-            var x = await context.AlertTracker.Where(x => x.IsSend == false && x.AlertDateTime.HasValue &&
+            return await context.AlertTracker.Where(x => x.IsSend == false && x.AlertDateTime.HasValue &&
                                 x.AlertDateTime.Value.Date == DateTime.Today.Date).ToListAsync();
 
-            return x.Where(x => x.AlertDateTime.Value.AddMinutes(Convert.ToDouble(x.Interval)) < DateTime.Now).ToList();
+            //return x.Where(x => x.AlertDateTime.Value.AddMinutes(Convert.ToDouble(x.Interval)) < DateTime.Now).ToList();
 
             //return await context.AlertTracker.Where(x=>x.IsSend==false && x.AlertDateTime.HasValue  && 
             //x.AlertDateTime.Value.Date == DateTime.Today.Date ).ToListAsync();
@@ -71,6 +71,25 @@ namespace SMTP.Service
             }
             return alertBySensors;
 
+        }
+        public async Task<List<Smtpsetting>> GetSmtpsettings()
+        {
+            return await context.Smtpsetting.ToListAsync();
+        }
+        public async Task<Smtpsetting> UpdateSmtpsettingsCountAsync(int id)
+        {
+            var smtpsetting = await context.Smtpsetting.Where(x => x.Id == id).FirstOrDefaultAsync();
+            if (smtpsetting != null)
+            {
+                smtpsetting.CurrentEmailNumber =+1 ;
+                var result = context.Smtpsetting.Update(smtpsetting).Entity;
+                await context.SaveChangesAsync();
+                return result;
+            }
+            else
+            {
+                return null;
+            }
         }
     }
 }

@@ -27,7 +27,7 @@ namespace SMTP.Service
                     smtpClient.Port = Convert.ToInt32(_configuration["SMTPSetting:Port"]);
                     smtpClient.UseDefaultCredentials = false;
                     smtpClient.Credentials = basicCredential;
-                    //smtpClient.EnableSsl = true;
+                    smtpClient.EnableSsl = true;
 
                     message.From = fromAddress;
                     message.Subject = "Quality Compliance";

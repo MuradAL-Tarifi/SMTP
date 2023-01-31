@@ -25,6 +25,7 @@ namespace SMTP.Models
 
         public virtual DbSet<AlertBySensor> AlertBySensor { get; set; }
         public virtual DbSet<AlertTracker> AlertTracker { get; set; }
+        public virtual DbSet<Smtpsetting> Smtpsetting { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -46,6 +47,17 @@ namespace SMTP.Models
                 entity.Property(e => e.AlertDateTime).HasColumnType("datetime");
 
                 entity.Property(e => e.UserName).HasMaxLength(100);
+            });
+
+            modelBuilder.Entity<Smtpsetting>(entity =>
+            {
+                entity.ToTable("SMTPSetting");
+
+                entity.Property(e => e.MailAddress).IsUnicode(false);
+
+                entity.Property(e => e.Password).IsUnicode(false);
+
+                entity.Property(e => e.UserName).IsUnicode(false);
             });
 
             OnModelCreatingPartial(modelBuilder);
