@@ -10,14 +10,15 @@ using SMTP.Service;
 using SMTP.ThirdModels;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
+using SMTP.Models;
 
 namespace SMTP
 {
     public class Background : IHostedService, IDisposable
     {
-        private Timer timer10M;
+        private Timer timer30M;
         private Timer timer1Day;
-
+        private Timer timer60M;
 
         private readonly AlertTrackerService _processBackground;
         private readonly MailService mailService;
@@ -32,136 +33,184 @@ namespace SMTP
         public Task StartAsync(CancellationToken cancellationToken)
         {
 
-            timer10M = new Timer(async o =>
+            timer30M = new Timer(async o =>
             {
-                //var x = MailService.SendEmail("Khalid@compliance.com.sa");
-                var alertTrackersNotTracked = await _processBackground.GetAlertTrackersNotTrackedAsync();
-                if (alertTrackersNotTracked.Count() != 0)
+                var smtpsettings = await _processBackground.GetSmtpsettings();
+                if (smtpsettings.Count() != 0)
                 {
-                    var smtpsettings = _processBackground.GetSmtpsettings();
-                    foreach (var item in alertTrackersNotTracked)
+                    var settingsCount = smtpsettings.Count();
+
+                    var count = 0;
+                     await _processBackground.AlertTrackerInsertData();
+                    //var x = MailService.SendEmail("Khalid@compliance.com.sa");
+                    var alertTrackersNotTracked = await _processBackground.GetAlertTrackersNotTrackedAsync();
+                    if (alertTrackersNotTracked.Count() != 0)
                     {
-                        var emails = item.SendTo.Split(",");
-                        if (emails != null)
+                        foreach (var item in alertTrackersNotTracked)
                         {
-                            bool result = false;
-                            foreach (var email in emails)
+                            var smtpsetting = smtpsettings[count];
+                            var emails = item.SendTo.Split(",");
+                            if (emails != null)
                             {
-                                result = mailService.SendEmailAlarm(email, item);
-                                if (!result)
+                                bool result = false;
+                                foreach (var email in emails)
                                 {
-                                    Console.WriteLine("SMTP ERROR Cant send to this email " + email);
+                                    result = mailService.SendEmailAlarm(email, item, smtpsetting.UserName, smtpsetting.Password, smtpsetting.MailAddress);
+                                    if (!result)
+                                    {
+                                        Console.WriteLine("SMTP ERROR Cant send to this email " + email);
+                                    }
+                                }
+                                if (result)
+                                {
+                                    count++;
+                                    await _processBackground.UpdateSmtpsettingsCountAsync(smtpsetting.Id);
+                                    await _processBackground.UpdateAlertTrackerToSendAsync(item.Id);
+                                    Console.WriteLine("Done Send By " + smtpsetting.UserName);
                                 }
                             }
-                            if (result)
+                            else
                             {
-                                await _processBackground.UpdateAlertTrackerToSendAsync(item.Id);
-                                Console.WriteLine("Done");
+                                Console.WriteLine("Email should not be Null");
+                            }
+                            if (count == settingsCount)
+                            {
+                                count = 0;
                             }
                         }
-                        else
-                        {
-                            Console.WriteLine("Email should not be Null");
-                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("No Thing Found");
                     }
                 }
                 else
                 {
-                    Console.WriteLine("No Thing Found");
+                    Console.WriteLine("No SMTP Settings Found");
                 }
+
 
 
             },
            null,
            TimeSpan.Zero,
-           TimeSpan.FromMinutes(10)
+           TimeSpan.FromMinutes(30)
            );
+            timer60M = new Timer(async o =>
+            {
+                await _processBackground.UpdateSmtpsettingsCountAsync();
+            },
+            null,
+            TimeSpan.FromMinutes(50),
+            TimeSpan.FromMinutes(60)
+            );
             timer1Day = new Timer(async o =>
             {
-                var serials = await _processBackground.GetInventoryHistoryNotActive();
-                if (serials.Count != 0)
+                var smtpsettings = await _processBackground.GetSmtpsettings();
+                if (smtpsettings.Count() != 0)
                 {
-                    foreach (var item in serials)
+                    var settingsCount = smtpsettings.Count();
+
+                    var count = 0;
+                    var serials = await _processBackground.GetInventoryHistoryNotActive();
+                    if (serials.Count != 0)
                     {
-                        var inv = await trackerDBContext.Inventory.Where(x => x.Id == item.InventoryId).FirstOrDefaultAsync();
-                        var wr = await trackerDBContext.Warehouse.Where(x => x.Id == item.WarehouseId).FirstOrDefaultAsync();
-                        var senior = await trackerDBContext.Sensor.Where(x => x.Serial == item.Serial).FirstOrDefaultAsync();
-
-
-                        var emails = item.ToEmails.Split(",");
-                        if (emails != null)
+                        foreach (var item in serials)
                         {
-                            bool result = false;
-                            foreach (var email in emails)
+                            var smtpsetting = smtpsettings[count];
+
+                            var inv = await trackerDBContext.Inventory.Where(x => x.Id == item.InventoryId).FirstOrDefaultAsync();
+                            var wr = await trackerDBContext.Warehouse.Where(x => x.Id == item.WarehouseId).FirstOrDefaultAsync();
+                            var senior = await trackerDBContext.Sensor.Where(x => x.Serial == item.Serial).FirstOrDefaultAsync();
+
+
+                            var emails = item.ToEmails.Split(",");
+                            if (emails != null)
                             {
-                                result = mailService.SendEmailIsNotActive(item.ToEmails, senior.Name,inv.Name,wr.Name);
-                                if (!result)
+                                bool result = false;
+                                foreach (var email in emails)
                                 {
-                                    Console.WriteLine("SMTP ERROR Cant send to this email " + email);
+                                    result = mailService.SendEmailIsNotActive(item.ToEmails, senior.Name, inv.Name, wr.Name, smtpsetting.UserName, smtpsetting.Password, smtpsetting.MailAddress);
+                                    if (!result)
+                                    {
+                                        Console.WriteLine("SMTP ERROR Cant send to this email " + email);
+                                    }
+                                    else
+                                    {
+                                        count++;
+                                        Console.WriteLine("Done Send By " + smtpsetting.UserName);
+                                    }
                                 }
-                                else
-                                {
-                                    Console.WriteLine("Done");
-                                }
+
+                            }
+                            else
+                            {
+                                Console.WriteLine("Email should not be Null");
                             }
 
                         }
-                        else
+                    }
+                    else
+                    {
+                        Console.WriteLine("No Thing Found Not Active");
+                    }
+                    if (count == settingsCount)
+                    {
+                        count = 0;
+                    }
+                    var serialsLowVoltage = await _processBackground.GetInventoryHistoryIsLowVoltage();
+                    if (serialsLowVoltage.Count != 0)
+                    {
+                        foreach (var item in serialsLowVoltage)
                         {
-                            Console.WriteLine("Email should not be Null");
-                        }
+                            var inv = await trackerDBContext.Inventory.Where(x => x.Id == item.InventoryId).FirstOrDefaultAsync();
+                            var wr = await trackerDBContext.Warehouse.Where(x => x.Id == item.WarehouseId).FirstOrDefaultAsync();
+                            var senior = await trackerDBContext.Sensor.Where(x => x.Serial == item.Serial).FirstOrDefaultAsync();
 
+                            var smtpsetting = smtpsettings[count];
+
+                            var emails = item.ToEmails.Split(",");
+                            if (emails != null)
+                            {
+                                bool result = false;
+                                foreach (var email in emails)
+                                {
+                                    result = mailService.SendEmailIsLowVoltage(item.ToEmails, senior.Name, inv.Name, wr.Name, smtpsetting.UserName, smtpsetting.Password, smtpsetting.MailAddress);
+                                    if (!result)
+                                    {
+                                        Console.WriteLine("SMTP ERROR Cant send to this email " + email);
+                                    }
+                                    else
+                                    {
+                                        count++;
+                                        Console.WriteLine("Done Send By " + smtpsetting.UserName);
+                                    }
+                                }
+
+                            }
+                            else
+                            {
+                                Console.WriteLine("Email should not be Null");
+                            }
+
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("No Thing Found Low Voltage");
+                    }
+                    if (count == settingsCount)
+                    {
+                        count = 0;
                     }
                 }
                 else
                 {
-                    Console.WriteLine("No Thing Found Not Active");
+                    Console.WriteLine("No SMTP Settings Found");
                 }
-
-
-                var serialsLowVoltage = await _processBackground.GetInventoryHistoryIsLowVoltage();
-                if (serialsLowVoltage.Count != 0)
-                {
-                    foreach (var item in serialsLowVoltage)
-                    {
-                        var inv = await trackerDBContext.Inventory.Where(x => x.Id == item.InventoryId).FirstOrDefaultAsync();
-                        var wr = await trackerDBContext.Warehouse.Where(x => x.Id == item.WarehouseId).FirstOrDefaultAsync();
-                        var senior = await trackerDBContext.Sensor.Where(x => x.Serial == item.Serial).FirstOrDefaultAsync();
-
-
-                        var emails = item.ToEmails.Split(",");
-                        if (emails != null)
-                        {
-                            bool result = false;
-                            foreach (var email in emails)
-                            {
-                                result = mailService.SendEmailIsLowVoltage(item.ToEmails, senior.Name, inv.Name, wr.Name);
-                                if (!result)
-                                {
-                                    Console.WriteLine("SMTP ERROR Cant send to this email " + email);
-                                }
-                                else
-                                {
-                                    Console.WriteLine("Done");
-                                }
-                            }
-
-                        }
-                        else
-                        {
-                            Console.WriteLine("Email should not be Null");
-                        }
-
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("No Thing Found Low Voltage");
-                }
-
             },
            null,
-           TimeSpan.FromMinutes(15),
+           TimeSpan.FromMinutes(45),
            TimeSpan.FromDays(1)
            );
 
@@ -176,7 +225,7 @@ namespace SMTP
 
         public void Dispose()
         {
-            timer10M?.Dispose();
+            timer30M?.Dispose();
             timer1Day?.Dispose();
         }
     }

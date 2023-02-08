@@ -14,14 +14,14 @@ namespace SMTP.Service
         {
             this._configuration = configuration;
         }
-        public bool SendEmailAlarm(string to, AlertTracker alertTracker)
+        public bool SendEmailAlarm(string to, AlertTracker alertTracker,string UserName,string Password ,string MailAddress)
         {
             using (SmtpClient smtpClient = new SmtpClient())
             {
-                var basicCredential = new NetworkCredential(_configuration["SMTPSetting:UserName"], _configuration["SMTPSetting:Password"]);
+                var basicCredential = new NetworkCredential(UserName, Password);
                 using (MailMessage message = new MailMessage())
                 {
-                    MailAddress fromAddress = new MailAddress(_configuration["SMTPSetting:MailAddress"]);
+                    MailAddress fromAddress = new MailAddress(MailAddress);
 
                     smtpClient.Host = _configuration["SMTPSetting:Host"];
                     smtpClient.Port = Convert.ToInt32(_configuration["SMTPSetting:Port"]);
@@ -50,14 +50,14 @@ namespace SMTP.Service
                 }
             }
         }
-        public bool SendEmailIsLowVoltage(string to, string sensiorName, string invName, string warehouseName)
+        public bool SendEmailIsLowVoltage(string to, string sensiorName, string invName, string warehouseName, string UserName, string Password, string MailAddress)
         {
             using (SmtpClient smtpClient = new SmtpClient())
             {
-                var basicCredential = new NetworkCredential(_configuration["SMTPSetting:UserName"], _configuration["SMTPSetting:Password"]);
+                var basicCredential = new NetworkCredential(UserName, Password);
                 using (MailMessage message = new MailMessage())
                 {
-                    MailAddress fromAddress = new MailAddress(_configuration["SMTPSetting:MailAddress"]);
+                    MailAddress fromAddress = new MailAddress(MailAddress);
 
                     smtpClient.Host = _configuration["SMTPSetting:Host"];
                     smtpClient.Port = Convert.ToInt32(_configuration["SMTPSetting:Port"]);
@@ -86,14 +86,14 @@ namespace SMTP.Service
                 }
             }
         }
-        public bool SendEmailIsNotActive(string to, string sensiorName,string invName, string warehouseName)
+        public bool SendEmailIsNotActive(string to, string sensiorName,string invName, string warehouseName, string UserName, string Password, string MailAddress)
         {
             using (SmtpClient smtpClient = new SmtpClient())
             {
-                var basicCredential = new NetworkCredential(_configuration["SMTPSetting:UserName"], _configuration["SMTPSetting:Password"]);
+                var basicCredential = new NetworkCredential(UserName, Password);
                 using (MailMessage message = new MailMessage())
                 {
-                    MailAddress fromAddress = new MailAddress(_configuration["SMTPSetting:MailAddress"]);
+                    MailAddress fromAddress = new MailAddress(MailAddress);
 
                     smtpClient.Host = _configuration["SMTPSetting:Host"];
                     smtpClient.Port = Convert.ToInt32(_configuration["SMTPSetting:Port"]);
