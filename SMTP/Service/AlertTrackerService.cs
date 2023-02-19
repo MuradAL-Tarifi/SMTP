@@ -27,14 +27,18 @@ namespace SMTP.Service
             List<AlertTracker> tracks = new List<AlertTracker>();
             foreach (var item in sensers)
             {
+
+
+
+                var sensor = await context.AlertBySensor.Where(x => x.Serial == item.Serial).FirstOrDefaultAsync();
+                var sensorData = await context.Smtpchecker.Where(x => x.Serial == item.Serial).FirstOrDefaultAsync();
+
                 var treackerHistory = await trackerHistoryDBContext.InventoryHistory.Where(x =>
-                x.GpsDate < DateTime.Now && x.GpsDate > DateTime.Now.AddMinutes(Convert.ToDouble(-60)) && x.Serial == item.Serial).ToListAsync();
+                                    x.GpsDate <= DateTime.Now && x.GpsDate >= sensorData.UpdatedDate && 
+                                    x.Serial == item.Serial).OrderByDescending(X => X.GpsDate).ToListAsync();
 
-                if (treackerHistory != null)
+                if (treackerHistory.Count() != 0)
                 {
-                    var sensor = await context.AlertBySensor.Where(x => x.Serial == item.Serial).FirstOrDefaultAsync();
-                    var sensorData = await context.Smtpchecker.Where(x => x.Serial == item.Serial).FirstOrDefaultAsync();
-
                     //inside Temperature
                     var a = treackerHistory.Where(treacker => Convert.ToDouble(treacker.Temperature) < sensor.MaxValueTemperature && Convert.ToDouble(treacker.Temperature) > sensor.MinValueTemperature).Count();
                     //OutSide Temperature
@@ -48,31 +52,31 @@ namespace SMTP.Service
                         if (a != 0 && sensorData.IsSendTemperature == true)
                         {
 
-                                sensorData.IsSendTemperature = false;
-                                sensorData.IsSendTemperatureSecond = false;
-                                sensorData.UpdatedDate = treacker.GpsDate;
-                                var newSensorData = context.Smtpchecker.Update(sensorData);
-                                await context.SaveChangesAsync();
+                            sensorData.IsSendTemperature = false;
+                            sensorData.IsSendTemperatureSecond = false;
+                            sensorData.UpdatedDate = treacker.GpsDate;
+                            var newSensorData = context.Smtpchecker.Update(sensorData);
+                            await context.SaveChangesAsync();
                         }
-                        else if (b != 0 && a == 0 && sensorData.IsSendTemperature == false && sensorData.IsSendTemperatureSecond == false)
+                        else if (b != 0 && a == 0 && sensorData.IsSendTemperature == false && sensorData.IsSendTemperatureSecond == false && DateTime.Now >= treacker.GpsDate.AddMinutes(30))
                         {
                             //OutSide Temperature
                             if (Convert.ToDouble(treacker.Temperature) > sensor.MaxValueTemperature || Convert.ToDouble(treacker.Temperature) < sensor.MinValueTemperature)
                             {
                                 AlertTracker alertTracker = new AlertTracker()
                                 {
-                                    UserName= sensor.UserName,
-                                    AlertDateTime=treacker.GpsDate,
-                                    AlertType="2",
-                                    MonitoredUnit= trackerDBContext.Sensor.Where(x=>x.Serial==treacker.Serial).FirstOrDefault().Name + " ("+treacker.Serial +" )",
+                                    UserName = sensor.UserName,
+                                    AlertDateTime = treacker.GpsDate,
+                                    AlertType = "Out Of Range!",
+                                    MonitoredUnit = trackerDBContext.Sensor.Where(x => x.Serial == treacker.Serial).FirstOrDefault().Name + " (" + treacker.Serial + " )",
                                     MessageForValue = "Temperature " + treacker.Temperature + " &#8451;",
                                     Serial = treacker.Serial,
-                                    Zone = trackerDBContext.Inventory.Include(x=>x.Warehouse).ThenInclude(x=>x.Fleet).Where(x=>x.Id==treacker.InventoryId).FirstOrDefault().Warehouse.Fleet.NameEn,
+                                    Zone = trackerDBContext.Inventory.Include(x => x.Warehouse).ThenInclude(x => x.Fleet).Where(x => x.Id == treacker.InventoryId).FirstOrDefault().Warehouse.Fleet.NameEn,
                                     WarehouseName = trackerDBContext.Warehouse.Where(x => x.Id == sensor.WarehouseId).FirstOrDefault().Name,
                                     SendTo = sensor.ToEmails,
                                     Interval = 60,
-                                    IsSend=false,
-                                    AlertId=Convert.ToInt32(treacker.Id)
+                                    IsSend = false,
+                                    AlertId = Convert.ToInt32(treacker.Id)
                                 };
                                 var aa = await context.AlertTracker.AddAsync(alertTracker);
 
@@ -83,7 +87,7 @@ namespace SMTP.Service
                                 await context.SaveChangesAsync();
                             }
                         }
-                        else if (b != 0 && a == 0 && sensorData.IsSendTemperature == true && sensorData.IsSendTemperatureSecond == false && DateTime.Now.TimeOfDay > sensorData.UpdatedDate.Value.AddMinutes(30).TimeOfDay)
+                        else if (b != 0 && a == 0 && sensorData.IsSendTemperature == true && sensorData.IsSendTemperatureSecond == false && treacker.GpsDate >= sensorData.UpdatedDate.Value.AddMinutes(30) && treacker.GpsDate < sensorData.UpdatedDate.Value.AddMinutes(40))
                         {
                             //OutSide Temperature
                             if (Convert.ToDouble(treacker.Temperature) > sensor.MaxValueTemperature || Convert.ToDouble(treacker.Temperature) < sensor.MinValueTemperature)
@@ -92,7 +96,7 @@ namespace SMTP.Service
                                 {
                                     UserName = sensor.UserName,
                                     AlertDateTime = treacker.GpsDate,
-                                    AlertType = "2",
+                                    AlertType = "Out Of Range!",
                                     MonitoredUnit = trackerDBContext.Sensor.Where(x => x.Serial == treacker.Serial).FirstOrDefault().Name + " (" + treacker.Serial + " )",
                                     MessageForValue = "Temperature " + treacker.Temperature + " &#8451;",
                                     Serial = treacker.Serial,
@@ -115,14 +119,14 @@ namespace SMTP.Service
                         if (c != 0 && sensorData.IsSendHumidity == true)
                         {
 
-                                sensorData.IsSendHumidity = false;
-                                sensorData.IsSendHumiditySecond = false;
-                                sensorData.UpdatedDate = treacker.GpsDate;
-                                var newSensorData = context.Smtpchecker.Update(sensorData);
-                                await context.SaveChangesAsync();
-                            
+                            sensorData.IsSendHumidity = false;
+                            sensorData.IsSendHumiditySecond = false;
+                            sensorData.UpdatedDate = treacker.GpsDate;
+                            var newSensorData = context.Smtpchecker.Update(sensorData);
+                            await context.SaveChangesAsync();
+
                         }
-                        else if (e != 0 && c == 0 && sensorData.IsSendHumidity == false && sensorData.IsSendHumiditySecond == false)
+                        else if (e != 0 && c == 0 && sensorData.IsSendHumidity == false && sensorData.IsSendHumiditySecond == false && DateTime.Now >= treacker.GpsDate.AddMinutes(30))
                         {
                             //OutSide Humidity
                             if (Convert.ToDouble(treacker.Humidity) > sensor.MaxValueHumidity || Convert.ToDouble(treacker.Humidity) < sensor.MinValueHumidity)
@@ -131,7 +135,7 @@ namespace SMTP.Service
                                 {
                                     UserName = sensor.UserName,
                                     AlertDateTime = treacker.GpsDate,
-                                    AlertType = "2",
+                                    AlertType = "Out Of Range!",
                                     MonitoredUnit = trackerDBContext.Sensor.Where(x => x.Serial == treacker.Serial).FirstOrDefault().Name + " (" + treacker.Serial + " )",
                                     MessageForValue = "Humidity " + treacker.Temperature,
                                     Serial = treacker.Serial,
@@ -151,7 +155,7 @@ namespace SMTP.Service
                                 await context.SaveChangesAsync();
                             }
                         }
-                        else if (b != 0 && a == 0 && sensorData.IsSendHumidity == true && sensorData.IsSendHumiditySecond == false && DateTime.Now.TimeOfDay > sensorData.UpdatedDate.Value.AddMinutes(30).TimeOfDay)
+                        else if (b != 0 && a == 0 && sensorData.IsSendHumidity == true && sensorData.IsSendHumiditySecond == false && DateTime.Now >= sensorData.UpdatedDate.Value.AddMinutes(30))
                         {
                             //OutSide Humidity
                             if (Convert.ToDouble(treacker.Humidity) > sensor.MaxValueHumidity || Convert.ToDouble(treacker.Humidity) < sensor.MinValueHumidity)
@@ -160,7 +164,7 @@ namespace SMTP.Service
                                 {
                                     UserName = sensor.UserName,
                                     AlertDateTime = treacker.GpsDate,
-                                    AlertType = "2",
+                                    AlertType = "Out Of Range!",
                                     MonitoredUnit = trackerDBContext.Sensor.Where(x => x.Serial == treacker.Serial).FirstOrDefault().Name + " (" + treacker.Serial + " )",
                                     MessageForValue = "Humidity " + treacker.Temperature,
                                     Serial = treacker.Serial,

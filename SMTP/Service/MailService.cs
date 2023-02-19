@@ -45,6 +45,7 @@ namespace SMTP.Service
                     }
                     catch (Exception ex)
                     {
+                        Console.WriteLine(ex.Message);
                         return false;
                     }
                 }
