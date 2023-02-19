@@ -60,7 +60,7 @@ namespace SMTP
                                     result = mailService.SendEmailAlarm(email, item, smtpsetting.UserName, smtpsetting.Password, smtpsetting.MailAddress);
                                     if (!result)
                                     {
-                                        Console.WriteLine("SMTP ERROR Cant send to this email " + email + " For Serial"+ item.Serial);
+                                        Console.WriteLine("SMTP ERROR Cant send to this email " + email);
                                     }
                                 }
                                 if (result)
@@ -68,7 +68,7 @@ namespace SMTP
                                     count++;
                                     await _processBackground.UpdateSmtpsettingsCountAsync(smtpsetting.Id);
                                     await _processBackground.UpdateAlertTrackerToSendAsync(item.Id);
-                                    Console.WriteLine("Done Send By " + smtpsetting.UserName);
+                                    Console.WriteLine("Done Send By " + smtpsetting.UserName + " For Serial" + item.Serial);
                                     result = false;
                                 }
                             }
