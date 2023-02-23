@@ -68,7 +68,7 @@ namespace SMTP
                                     count++;
                                     await _processBackground.UpdateSmtpsettingsCountAsync(smtpsetting.Id);
                                     await _processBackground.UpdateAlertTrackerToSendAsync(item.Id);
-                                    Console.WriteLine("Done Send By " + smtpsetting.UserName + " For Serial" + item.Serial);
+                                    Console.WriteLine("Done Send By " + smtpsetting.UserName + " For Serial " + item.Serial);
                                     result = false;
                                 }
                             }

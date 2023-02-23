@@ -26,7 +26,7 @@ namespace SMTP.Service
             var sensers = await context.AlertBySensor.ToListAsync();
             List<AlertTracker> tracks = new List<AlertTracker>();
             foreach (var item in sensers)
-            {
+             {
 
 
 
@@ -34,7 +34,8 @@ namespace SMTP.Service
                 var sensorData = await context.Smtpchecker.Where(x => x.Serial == item.Serial).FirstOrDefaultAsync();
 
                 var treackerHistory = await trackerHistoryDBContext.InventoryHistory.Where(x =>
-                                    x.GpsDate <= DateTime.Now && x.GpsDate >= sensorData.UpdatedDate && 
+                                    x.GpsDate <= DateTime.Now && (x.GpsDate >= sensorData.UpdatedDateHumidity
+                                    || x.GpsDate >= sensorData.UpdatedDateTemperature) &&
                                     x.Serial == item.Serial).OrderByDescending(X => X.GpsDate).ToListAsync();
 
                 if (treackerHistory.Count() != 0)
@@ -49,16 +50,17 @@ namespace SMTP.Service
                     var e = treackerHistory.Where(treacker => Convert.ToDouble(treacker.Humidity) > sensor.MaxValueHumidity || Convert.ToDouble(treacker.Humidity) < sensor.MinValueHumidity).Count();
                     foreach (var treacker in treackerHistory)
                     {
-                        if (a != 0 && sensorData.IsSendTemperature == true)
+                        if (a != 0 && Convert.ToDouble(treacker.Temperature) < sensor.MaxValueTemperature && Convert.ToDouble(treacker.Temperature) > sensor.MinValueTemperature)
                         {
 
                             sensorData.IsSendTemperature = false;
                             sensorData.IsSendTemperatureSecond = false;
-                            sensorData.UpdatedDate = treacker.GpsDate;
+                            sensorData.UpdatedDateTemperature = treacker.GpsDate;
                             var newSensorData = context.Smtpchecker.Update(sensorData);
                             await context.SaveChangesAsync();
+                            
                         }
-                        else if (b != 0 && a == 0 && sensorData.IsSendTemperature == false && sensorData.IsSendTemperatureSecond == false && DateTime.Now >= treacker.GpsDate.AddMinutes(30))
+                        else if (b != 0 && sensorData.IsSendTemperature == false && sensorData.IsSendTemperatureSecond == false && DateTime.Now >= treacker.GpsDate.AddMinutes(30) && treacker.GpsDate >= sensorData.UpdatedDateTemperature)
                         {
                             //OutSide Temperature
                             if (Convert.ToDouble(treacker.Temperature) > sensor.MaxValueTemperature || Convert.ToDouble(treacker.Temperature) < sensor.MinValueTemperature)
@@ -81,13 +83,14 @@ namespace SMTP.Service
                                 var aa = await context.AlertTracker.AddAsync(alertTracker);
 
                                 sensorData.IsSendTemperature = true;
-                                sensorData.UpdatedDate = treacker.GpsDate;
+                                sensorData.UpdatedDateTemperature = treacker.GpsDate;
                                 var newSensorData = context.Smtpchecker.Update(sensorData);
 
                                 await context.SaveChangesAsync();
+                               
                             }
                         }
-                        else if (b != 0 && a == 0 && sensorData.IsSendTemperature == true && sensorData.IsSendTemperatureSecond == false && treacker.GpsDate >= sensorData.UpdatedDate.Value.AddMinutes(30) && treacker.GpsDate < sensorData.UpdatedDate.Value.AddMinutes(40))
+                        else if (b != 0  && sensorData.IsSendTemperature == true && sensorData.IsSendTemperatureSecond == false && treacker.GpsDate >= sensorData.UpdatedDateTemperature.Value.AddMinutes(30) && treacker.GpsDate < sensorData.UpdatedDateTemperature.Value.AddMinutes(40) )
                         {
                             //OutSide Temperature
                             if (Convert.ToDouble(treacker.Temperature) > sensor.MaxValueTemperature || Convert.ToDouble(treacker.Temperature) < sensor.MinValueTemperature)
@@ -110,23 +113,25 @@ namespace SMTP.Service
                                 var aa = await context.AlertTracker.AddAsync(alertTracker);
 
                                 sensorData.IsSendTemperatureSecond = true;
-                                sensorData.UpdatedDate = treacker.GpsDate;
+                                sensorData.UpdatedDateTemperature = treacker.GpsDate;
                                 var newSensorData = context.Smtpchecker.Update(sensorData);
 
                                 await context.SaveChangesAsync();
+                                
                             }
                         }
-                        if (c != 0 && sensorData.IsSendHumidity == true)
+                        if (c != 0 && Convert.ToDouble(treacker.Humidity) < sensor.MaxValueHumidity && Convert.ToDouble(treacker.Humidity) > sensor.MinValueHumidity)
                         {
 
                             sensorData.IsSendHumidity = false;
                             sensorData.IsSendHumiditySecond = false;
-                            sensorData.UpdatedDate = treacker.GpsDate;
+                            sensorData.UpdatedDateHumidity = treacker.GpsDate;
                             var newSensorData = context.Smtpchecker.Update(sensorData);
                             await context.SaveChangesAsync();
+                           
 
                         }
-                        else if (e != 0 && c == 0 && sensorData.IsSendHumidity == false && sensorData.IsSendHumiditySecond == false && DateTime.Now >= treacker.GpsDate.AddMinutes(30))
+                        else if (e != 0  && sensorData.IsSendHumidity == false && sensorData.IsSendHumiditySecond == false && DateTime.Now >= treacker.GpsDate.AddMinutes(30) && treacker.GpsDate >= sensorData.UpdatedDateHumidity)
                         {
                             //OutSide Humidity
                             if (Convert.ToDouble(treacker.Humidity) > sensor.MaxValueHumidity || Convert.ToDouble(treacker.Humidity) < sensor.MinValueHumidity)
@@ -149,13 +154,15 @@ namespace SMTP.Service
                                 var aa = await context.AlertTracker.AddAsync(alertTracker);
 
                                 sensorData.IsSendHumidity = true;
-                                sensorData.UpdatedDate = treacker.GpsDate;
+                                sensorData.UpdatedDateHumidity = treacker.GpsDate;
                                 var newSensorData = context.Smtpchecker.Update(sensorData);
 
                                 await context.SaveChangesAsync();
+                                
                             }
                         }
-                        else if (b != 0 && a == 0 && sensorData.IsSendHumidity == true && sensorData.IsSendHumiditySecond == false && DateTime.Now >= sensorData.UpdatedDate.Value.AddMinutes(30))
+                        else if (e != 0 && sensorData.IsSendHumidity == true && sensorData.IsSendHumiditySecond == false && treacker.GpsDate >= sensorData.UpdatedDateHumidity.Value.AddMinutes(30) && treacker.GpsDate < sensorData.UpdatedDateHumidity
+                            .Value.AddMinutes(40))
                         {
                             //OutSide Humidity
                             if (Convert.ToDouble(treacker.Humidity) > sensor.MaxValueHumidity || Convert.ToDouble(treacker.Humidity) < sensor.MinValueHumidity)
@@ -178,10 +185,11 @@ namespace SMTP.Service
                                 var aa = await context.AlertTracker.AddAsync(alertTracker);
 
                                 sensorData.IsSendHumiditySecond = true;
-                                sensorData.UpdatedDate = treacker.GpsDate;
+                                sensorData.UpdatedDateHumidity = treacker.GpsDate;
                                 var newSensorData = context.Smtpchecker.Update(sensorData);
 
                                 await context.SaveChangesAsync();
+        
                             }
                         }
                     }

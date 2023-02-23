@@ -15,6 +15,7 @@ namespace SMTP.Models
         public bool? IsSendHumidity { get; set; }
         public bool? IsSendTemperatureSecond { get; set; }
         public bool? IsSendHumiditySecond { get; set; }
-        public DateTime? UpdatedDate { get; set; }
+        public DateTime? UpdatedDateTemperature { get; set; }
+        public DateTime? UpdatedDateHumidity { get; set; }
     }
 }

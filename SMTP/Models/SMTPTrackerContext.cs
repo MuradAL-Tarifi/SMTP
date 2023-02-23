@@ -54,7 +54,9 @@ namespace SMTP.Models
             {
                 entity.ToTable("SMTPChecker");
 
-                entity.Property(e => e.UpdatedDate).HasColumnType("datetime");
+                entity.Property(e => e.UpdatedDateTemperature).HasColumnType("datetime");
+
+                entity.Property(e => e.UpdatedDateHumidity).HasColumnType("datetime");
             });
 
             modelBuilder.Entity<Smtpsetting>(entity =>
